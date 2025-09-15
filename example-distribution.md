@@ -77,8 +77,6 @@ public class SimpleDistributionService : ISimpleDistributionService
         // 1. Cria chave única para a regra
         string ruleKey = $"{rule.AdquirenteId}_{rule.Prioridade}";
         
-        lock (_lockObject) // Thread-safe
-        {
             // 2. Inicializa contador se não existir
             if (!_transactionCounters.ContainsKey(ruleKey))
             {
@@ -89,8 +87,8 @@ public class SimpleDistributionService : ISimpleDistributionService
             _transactionCounters[ruleKey]++;
             int currentCount = _transactionCounters[ruleKey];
 
-            // 4. Reset a cada 100 transações (para trabalhar com percentuais)
-            if (currentCount > 100)
+            // 4. Reset a cada 10 transações (para trabalhar com percentuais)
+            if (currentCount > 10)
             {
                 _transactionCounters[ruleKey] = 1;
                 currentCount = 1;
@@ -107,7 +105,7 @@ public class SimpleDistributionService : ISimpleDistributionService
                 return rule.AdquirenteMenorPrioridadeId;
             }
         }
-    }
+    
 }
 ```
 
@@ -250,12 +248,6 @@ var regra = new DistributionRule(1, 1, 50, 2); // 50% Pagarme, 50% Bradesco
 6. **Previsível**: Sempre o mesmo padrão
 7. **Testável**: Fácil de testar e debugar
 
-## ⚠️ Considerações
-
-1. **Memory Bank**: Dados ficam em memória (perdidos se aplicação reiniciar)
-2. **Thread-Safe**: Usa lock (pode impactar performance em alta concorrência)
-3. **ID Fixo**: Adquirente de menor prioridade tem ID fixo (2)
-4. **Uma Regra**: Funciona com uma regra por vez
 
 ## 🧪 Teste Unitário
 
