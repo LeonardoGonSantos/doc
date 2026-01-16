@@ -54,12 +54,12 @@ Em gateways “in-house”, a certificação geralmente falha por 4 motivos:
 ### 3.1 Tokenização no backend (mais simples para começar)
 ```mermaid
 flowchart LR
-  A[Front-end Angular] -->|POST /payments| B[API .NET]
-  B -->|encrypt/tokenize PAN| V[HashiCorp Vault - Transit (OSS)]
-  V -->|ciphertext token| B
-  B -->|store token + last4| DB[(DB)]
-  B -->|detokenize just-in-time| V
-  B -->|PAN+CVV -> adquirente| G[Getnet/Stone/Itaú]
+  A["Front-end (Angular)"] -->|"POST /payments"| B["Payments API (.NET)"]
+  B -->|"encrypt PAN (transit/encrypt)"| V["Vault Transit (OSS)"]
+  V -->|"ciphertext (cardToken)"| B
+  B -->|"store cardToken + last4"| DB["DB (tokens)"]
+  B -->|"decrypt just-in-time (transit/decrypt)"| V
+  B -->|"PAN+CVV (TLS) -> adquirente"| G["Adquirente (Getnet/Stone/Itaú)"]
 ```
 
 ### 3.2 “Client-side tokenization” (recomendado: via BFF proxy, NÃO exponha Vault direto)
@@ -67,14 +67,14 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  A[Angular] -->|GET /vault/encode-token| BFF[Tokenization BFF (.NET)]
-  BFF -->|AppRole login| V[Vault Transit]
-  BFF -->|short-lived token (encode-only)| A
-  A -->|POST /vault/encrypt (proxy)| BFF
-  BFF -->|transit/encrypt| V
-  V -->|ciphertext| BFF -->|token| A
-  A -->|POST /payments {cardToken,...}| API[Payments API .NET]
-  API -->|detokenize & send| V --> API --> Getnet[Adquirente]
+  A["Angular"] -->|"POST /tokenization/pan"| BFF["Tokenization BFF (.NET)"]
+  BFF -->|"AppRole login"| V["Vault Transit (OSS)"]
+  BFF -->|"transit/encrypt (PAN)"| V
+  V -->|"ciphertext (cardToken)"| BFF
+  BFF -->|"cardToken + last4"| A
+  A -->|"POST /payments (cardToken,...)"| API["Payments API (.NET)"]
+  API -->|"decrypt just-in-time"| V
+  API -->|"PAN+CVV (TLS) -> adquirente"| G["Adquirente"]
 ```
 
 ---
